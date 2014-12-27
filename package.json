@@ -17,6 +17,7 @@
     "webpack": "^1.4.13"
   },
   "dependencies": {
+    "immutable": "^3.4.1",
     "lodash": "^2.4.1",
     "react": "^0.12.1"
   }
