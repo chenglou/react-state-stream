@@ -1,0 +1,23 @@
+{
+  "name": "react-set-state-stream",
+  "version": "0.0.0",
+  "description": "",
+  "main": "index.jsx",
+  "scripts": {
+    "build": "webpack -w --module-bind 'jsx=jsx-loader' index.jsx --output-file out.js"
+  },
+  "author": "Cheng Lou",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/chenglou/react-set-state-stream/issues"
+  },
+  "homepage": "https://github.com/chenglou/react-set-state-stream",
+  "devDependencies": {
+    "jsx-loader": "^0.12.2",
+    "webpack": "^1.4.13"
+  },
+  "dependencies": {
+    "lodash": "^2.4.1",
+    "react": "^0.12.1"
+  }
+}
