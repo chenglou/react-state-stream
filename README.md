@@ -18,10 +18,10 @@ Instead of one state, set all the states that will ever be, aka a state stream. 
 
 A normal tween can simply be expressed as a map over a chunk of the lazy seq. Same for physics engine. Works even if the tween never stops (e.g. a physics engine where a menu item floats in mid air).
 
-Unmounting is taken care of by storing a copy of `props.children` in the transition wrapper component's state stream, along with a `StyleObjects<childKey, Object>` for animation, most probably. Each frame (`componentWillUpdate`) it diffs the entering/exiting children. It then describes how the transition changes:
+Unmounting is taken care of by storing a copy of `props.children` in the transition wrapper component's state stream, along with a `styleConfig<childKey, Object>` for animation, most probably. Each frame (`componentWillUpdate`) it diffs the entering/exiting children. It then describes how the transition changes:
 
 ```js
-tween = this.stream.take(100).map(state => update(state.config.childKey.height, easeOut(bla)))
+tween = this.stream.take(100).map(state => update(state.styleConfig.childKey.height, easeOut(easeOutParams)))
 rest = this.steam.drop(100)
   .map(state => update(state.config.childKey.height, 0))
   .map(state => update(state.children, blaOneLessChild))
@@ -38,7 +38,7 @@ For unmounting, we really need to treat it as first-class state stream transform
 
 When I said first-class, I mean that we need to realize that unmounting transition is not reserved for just animation. With this library (demo 3 specifically) we gain new ways of expressing some UIs:
 
-  - Imagine a photo app where swiping left/right shows the prev/next picture. If we swipe and hold midway, there are two photos on the screen at that moment. With the transition wrapper, we don't have to take care of that logic in our main view! Picture 1 will infinitely stay in "unmounting" mode and picture 2, in "mounting" mode.
+  - Imagine a photo app where swiping right shows the next picture. If we swipe and hold midway, there are two photos on the screen at that moment. With the transition wrapper, we don't have to take care of that logic in our main view! Picture 1 will infinitely stay in "unmounting" mode and picture 2, in "mounting" mode. In reality we've only specified one photo component in the view.
   - If we wrap the whole app in a transition wrapper, we can do portrait-landscape crossfade for free.
 
 Thanks to this mentality (i.e. animation is really just a state stream), there are very little library-specific code here. Like, 40 lines (to change some existing React behaviors) + some general sequence helpers.
