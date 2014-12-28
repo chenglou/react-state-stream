@@ -70,6 +70,7 @@ var App2 = React.createClass({
       padding: 20,
       position: 'relative',
       top: 10,
+      WebkitTransform: 'translate3d(' + this.state.blockX[0] + 'px,0,0)',
       transform: 'translate3d(' + this.state.blockX[0] + 'px,0,0)',
     };
     var s2 = {
@@ -79,6 +80,7 @@ var App2 = React.createClass({
       padding: 20,
       position: 'relative',
       top: 50,
+      WebkitTransform: 'translate3d(' + this.state.blockX[1] + 'px,0,0)',
       transform: 'translate3d(' + this.state.blockX[1] + 'px,0,0)',
     };
 

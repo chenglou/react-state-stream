@@ -26,6 +26,7 @@ var Child = React.createClass({
       borderRadius: '20px',
       display: 'inline-block',
       padding: 22,
+      WebkitTransform: 'rotate(' + this.state.deg + 'deg)',
       transform: 'rotate(' + this.state.deg + 'deg)',
     };
     return (
@@ -74,7 +75,9 @@ var App1 = React.createClass({
       borderRadius: '30px',
       display: 'inline-block',
       padding: 50,
+      WebkitTransform: 'rotate(' + this.state.deg + 'deg)',
       transform: 'rotate(' + this.state.deg + 'deg)',
+      marginLeft: 100,
     };
     return (
       <div>
