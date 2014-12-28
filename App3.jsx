@@ -4,14 +4,13 @@ var I = require('Immutable');
 var stateStream = require('./stateStream');
 var easingTypes = require('./easingTypes');
 
-function diff(a1, a2) {
-  var o1 = React.Children.map(a1, function(child) {
+function toObj(children) {
+  return React.Children.map(children, function(child) {
     return child;
   });
-  var o2 = React.Children.map(a2, function(child) {
-    return child;
-  });
+}
 
+function diff(o1, o2) {
   var res = [];
   for (var key in o1) {
     if (!o1.hasOwnProperty(key)) {
@@ -28,9 +27,7 @@ function diff(a1, a2) {
 var Container = React.createClass({
   mixins: [stateStream.Mixin],
   getInitialStateStream: function() {
-    var children = React.Children.map(this.props.children, function(child) {
-      return child;
-    });
+    var children = toObj(this.props.children);
     var configs = {};
     for (var key in children) {
       if (!children.hasOwnProperty(key)) {
@@ -55,37 +52,34 @@ var Container = React.createClass({
   },
 
   componentWillUpdate: function(nextProps) {
-    var enters = diff(nextProps.children, this.props.children);
-    var exits = diff(this.props.children, nextProps.children);
+    var o1 = toObj(nextProps.children);
+    var o2 = toObj(this.props.children);
+    var enters = diff(o1, o2);
+    var exits = diff(o2, o1);
+
     if (exits.length === 0 && enters.length === 0) {
       return;
     }
 
-    // TODO: do enters too
-    if (exits.length > 0) {
-      var duration = 700;
-      var frameCount = stateStream.toFrameCount(duration);
-      var initState = this.state;
+    var children = I.Map(toObj(nextProps.children));
+    var duration = 700;
+    var frameCount = stateStream.toFrameCount(duration);
+    var initState = this.state;
+    var newStream = this.stream;
 
-      var chunk = this.stream.take(frameCount).map(function(stateI, i) {
+    if (exits.length > 0) {
+
+      var chunk = newStream.take(frameCount).map(function(stateI, i) {
         exits.forEach(function(exitKey) {
-          var newLeft = easingTypes.easeInOutQuad(stateStream.toMs(i),
-            initState.configs[exitKey].left,
-            -200,
-            duration
-          );
-          var newOpacity = easingTypes.easeInOutQuad(
-            stateStream.toMs(i),
-            initState.configs[exitKey].opacity,
-            0,
-            duration
-          );
-          var newHeight = easingTypes.easeInOutQuad(
-            stateStream.toMs(i),
-            initState.configs[exitKey].height,
-            0,
-            duration
-          );
+          var ms = stateStream.toMs(i);
+          var config = initState.configs[exitKey];
+
+          var newLeft =
+            easingTypes.easeInOutQuad(ms, config.left, -200, duration);
+          var newOpacity =
+            easingTypes.easeInOutQuad(ms, config.opacity, 0, duration);
+          var newHeight =
+            easingTypes.easeInOutQuad(ms, config.height, 0, duration);
 
           stateI = stateI
             .updateIn(['configs', exitKey, 'left'], function() {return newLeft;})
@@ -96,12 +90,7 @@ var Container = React.createClass({
         return stateI;
       }).cacheResult();
 
-      var children = React.Children.map(nextProps.children, function(child) {
-        return child;
-      });
-      children = I.Map(children);
-
-      var restChunk = this.stream.skip(frameCount).map(function(stateI) {
+      var restChunk = newStream.skip(frameCount).map(function(stateI) {
         exits.forEach(function(exitKey) {
           stateI = stateI
             .removeIn(['configs', exitKey])
@@ -111,8 +100,49 @@ var Container = React.createClass({
         return stateI;
       }); // can't cacheResult here bc the perf would be horrible
 
-      this.setStateStream(chunk.concat(restChunk));
+      newStream = chunk.concat(restChunk);
     }
+
+    if (enters.length > 0) {
+      var chunk2 = newStream.take(frameCount).map(function(stateI, i) {
+        enters.forEach(function(enterKey) {
+          var ms = stateStream.toMs(i);
+          var config = initState.configs[enterKey];
+          var newLeft =
+            easingTypes.easeInOutQuad(ms, config.left, 0, duration);
+          var newOpacity =
+            easingTypes.easeInOutQuad(ms, config.opacity, 1, duration);
+          var newHeight =
+            easingTypes.easeInOutQuad(ms, config.height, 60, duration);
+
+          stateI = stateI
+            .updateIn(['children'], function() {return children;})
+            .updateIn(['configs', enterKey, 'left'], function() {return newLeft;})
+            .updateIn(['configs', enterKey, 'height'], function() {return newHeight;})
+            .updateIn(['configs', enterKey, 'opacity'], function() {return newOpacity;});
+        });
+
+        return stateI;
+      }).cacheResult();
+
+      var restChunk2 = newStream.skip(frameCount).map(function(stateI) {
+        enters.forEach(function(enterKey) {
+          stateI = stateI
+            .setIn(['configs', enterKey], I.Map({
+              left: 0,
+              height: 60,
+              opacity: 1,
+            }))
+            .updateIn(['children'], function() {return children;});
+        });
+
+        return stateI;
+      }); // can't cacheResult here bc the perf would be horrible
+
+      newStream = chunk2.concat(restChunk2);
+    }
+
+    this.setStateStream(newStream);
   },
 
   render: function() {
@@ -127,6 +157,8 @@ var Container = React.createClass({
         height: state.configs[key].height,
         opacity: state.configs[key].opacity,
         position: 'relative',
+        overflow: 'hidden',
+        WebkitUserSelect: 'none',
       };
       children.push(
         <div style={s} key={key}>{state.children[key]}</div>
@@ -150,7 +182,16 @@ var App3 = React.createClass({
 
   handleClick: function(item) {
     var items = this.state.items;
-    items.splice(items.indexOf(item), 1);
+    var idx = items.indexOf(item);
+    if (idx === -1) {
+      // might not find the clicked item because it's transitioning out and
+      // doesn't technically exist here in the parent anymore. Make it
+      // transition back (BEAT THAT)
+      items.push(item);
+      items.sort();
+    } else {
+      items.splice(idx, 1);
+    }
     this.setState({
       items: items,
     });
@@ -166,6 +207,7 @@ var App3 = React.createClass({
 
     return (
       <div>
+        Click to remove. Double click to un-remove (!)
         <Container>
           {this.state.items.map(function(item) {
             return (
