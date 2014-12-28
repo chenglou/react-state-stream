@@ -77,8 +77,11 @@ var App1 = React.createClass({
       transform: 'rotate(' + this.state.deg + 'deg)',
     };
     return (
-      <div style={s} onClick={this.handleClick}>
-        <Child turnLeft={this.state.childTurnLeft}></Child>
+      <div>
+        <button onClick={this.handleClick}>Click</button>
+        <div style={s}>
+          <Child turnLeft={this.state.childTurnLeft}></Child>
+        </div>
       </div>
     );
   }
