@@ -1,7 +1,5 @@
 var I = require('Immutable');
 
-var fuck = 0;
-
 function toRange(ms) {
   return I.Range(0, ms, 1000/60);
 }
@@ -56,10 +54,6 @@ var stateStreamMixin = {
     // update). That's ok for the purpose of the demo for now
     var self = this;
     requestAnimationFrame(function next() {
-      if (fuck++ > 9999) {
-        throw 'asd';
-      }
-
       var stateI = self.stream.first();
       self.stream = self.stream.rest();
       self.setState(stateI.toJS());
