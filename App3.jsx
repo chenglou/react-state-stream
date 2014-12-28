@@ -74,17 +74,11 @@ var Container = React.createClass({
           var ms = stateStream.toMs(i);
           var config = initState.configs[exitKey];
 
-          var newLeft =
-            easingTypes.easeInOutQuad(ms, config.left, -200, duration);
-          var newOpacity =
-            easingTypes.easeInOutQuad(ms, config.opacity, 0, duration);
-          var newHeight =
-            easingTypes.easeInOutQuad(ms, config.height, 0, duration);
-
-          stateI = stateI
-            .updateIn(['configs', exitKey, 'left'], function() {return newLeft;})
-            .updateIn(['configs', exitKey, 'height'], function() {return newHeight;})
-            .updateIn(['configs', exitKey, 'opacity'], function() {return newOpacity;});
+          stateI = stateI.setIn(['configs', exitKey], I.Map({
+            left: easingTypes.easeInOutQuad(ms, config.left, -200, duration),
+            opacity: easingTypes.easeInOutQuad(ms, config.opacity, 0, duration),
+            height: easingTypes.easeInOutQuad(ms, config.height, 0, duration),
+          }));
         });
 
         return stateI;
@@ -94,7 +88,7 @@ var Container = React.createClass({
         exits.forEach(function(exitKey) {
           stateI = stateI
             .removeIn(['configs', exitKey])
-            .updateIn(['children'], function() {return children;});
+            .setIn(['children'], children);
         });
 
         return stateI;
@@ -108,18 +102,14 @@ var Container = React.createClass({
         enters.forEach(function(enterKey) {
           var ms = stateStream.toMs(i);
           var config = initState.configs[enterKey];
-          var newLeft =
-            easingTypes.easeInOutQuad(ms, config.left, 0, duration);
-          var newOpacity =
-            easingTypes.easeInOutQuad(ms, config.opacity, 1, duration);
-          var newHeight =
-            easingTypes.easeInOutQuad(ms, config.height, 60, duration);
 
           stateI = stateI
-            .updateIn(['children'], function() {return children;})
-            .updateIn(['configs', enterKey, 'left'], function() {return newLeft;})
-            .updateIn(['configs', enterKey, 'height'], function() {return newHeight;})
-            .updateIn(['configs', enterKey, 'opacity'], function() {return newOpacity;});
+            .setIn(['configs', enterKey], I.Map({
+              left: easingTypes.easeInOutQuad(ms, config.left, 0, duration),
+              opacity: easingTypes.easeInOutQuad(ms, config.opacity, 1, duration),
+              height: easingTypes.easeInOutQuad(ms, config.height, 60, duration),
+            }))
+            .setIn(['children'], children);
         });
 
         return stateI;
@@ -133,7 +123,7 @@ var Container = React.createClass({
               height: 60,
               opacity: 1,
             }))
-            .updateIn(['children'], function() {return children;});
+            .setIn(['children'], children);
         });
 
         return stateI;

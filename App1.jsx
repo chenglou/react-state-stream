@@ -61,9 +61,7 @@ var App1 = React.createClass({
     // transformation might be happening and we'd lose them
     var newTurn = !this.stream.first().getIn(['childTurnLeft']);
     var s = this.stream.map(function(stateI) {
-      return stateI.updateIn(['childTurnLeft'], function() {
-        return newTurn;
-      });
+      return stateI.setIn(['childTurnLeft'], newTurn);
     });
 
     this.setStateStream(s);

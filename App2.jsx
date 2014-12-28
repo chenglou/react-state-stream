@@ -22,41 +22,32 @@ var App2 = React.createClass({
     var duration = 1500;
     var frameCount = stateStream.toFrameCount(duration);
     var initState = this.state;
-    var finalVal = [
+    var finalX = [
       initState.goingLeft[0] ? 50 : 300,
       initState.goingLeft[1] ? 100 : 400,
     ];
+    var newGoingLeft = I.List([!initState.goingLeft[0], !initState.goingLeft[1]]);
     // the convention should be to always access this.state (rather than
     // this.stream) in render and always access this.stream elsewhere. Here we
     // break the convention a bit for simpler code (currently, stream head is
     // the next state, not the current one)
     var chunk = this.stream.take(frameCount).map(function(stateI, i) {
-      var newVal0 = easingTypes.easeInOutQuad(
-        stateStream.toMs(i),
-        initState.blockX[0],
-        finalVal[0],
-        duration
-      );
-      var newVal1 = easingTypes.easeOutBounce(
-        stateStream.toMs(i),
-        initState.blockX[1],
-        finalVal[1],
-        duration
-      );
+      var ms = stateStream.toMs(i);
+      var newBlockX = I.List([
+        easingTypes.easeInOutQuad(ms, initState.blockX[0], finalX[0], duration),
+        easingTypes.easeOutBounce(ms, initState.blockX[1], finalX[1], duration),
+      ]);
 
       return stateI
-        .updateIn(['blockX', 0], function() {return newVal0;})
-        .updateIn(['blockX', 1], function() {return newVal1;})
-        .updateIn(['goingLeft', 0], function() {return !initState.goingLeft[0];})
-        .updateIn(['goingLeft', 1], function() {return !initState.goingLeft[1];});
+        .setIn(['blockX'], newBlockX)
+        .setIn(['goingLeft'], newGoingLeft);
     }).cacheResult();
 
+    var finalXI = I.List(finalX);
     var restChunk = this.stream.skip(frameCount).map(function(stateI) {
       return stateI
-        .updateIn(['blockX', 0], function() {return finalVal[0];})
-        .updateIn(['blockX', 1], function() {return finalVal[1];})
-        .updateIn(['goingLeft', 0], function() {return !initState.goingLeft[0];})
-        .updateIn(['goingLeft', 1], function() {return !initState.goingLeft[1];});
+        .setIn(['blockX'], finalXI)
+        .setIn(['goingLeft'], newGoingLeft);
     }); // can't cacheResult here bc the perf would be horrible
 
     this.setStateStream(chunk.concat(restChunk));
