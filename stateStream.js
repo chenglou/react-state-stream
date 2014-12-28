@@ -10,29 +10,8 @@ function toMs(frame) {
   return frame * 1000 / 60;
 }
 
-// function map2(arr1, arr2, f) {
-//   var res = [];
-//   for (var i = 0; i < Math.min(arr1.length, arr2.length); i++) {
-//     var item1 = i < arr1.length ? arr1[i] : null;
-//     var item2 = i < arr2.length ? arr2[i] : null;
-//     res.push(f(item1, item2));
-//   }
-
-//   return res;
-// }
-
-function map2(extraArr, f) {
-  var res = [];
-  for (var i = 0; i < this.stream.length; i++) {
-    res.push(f(_.cloneDeep(this.stream[i]), extraArr[i]));
-  }
-
-  var lastState = res[res.length - 1] || this.state;
-  for (; i < extraArr.length; i++) {
-    res.push(f(_.cloneDeep(lastState), extraArr[i]));
-  }
-
-  return res;
+function toFrameCount(ms) {
+  return ms * 60 / 1000;
 }
 
 function requestAnimationFrame2(f) {
@@ -42,12 +21,10 @@ function requestAnimationFrame2(f) {
 }
 
 var stateStreamMixin = {
-  map2: map2,
-
   setStateStream: function(stream) {
     // set the state at the same time immediately. Don't wait til next frame
     // this is probably a desired behavior
-    var state = stream.first().toObject();
+    var state = stream.first().toJS();
     this.stream = stream.rest();
     this.setState(state);
   },
@@ -64,7 +41,7 @@ var stateStreamMixin = {
   getInitialState: function() {
     var s;
     if (this.getInitialStateStream) {
-      s = this.getInitialStateStream().first().toObject();
+      s = this.getInitialStateStream().first().toJS();
     } else {
       s = {};
     }
@@ -77,17 +54,18 @@ var stateStreamMixin = {
     // fact that if a parent and child both include the mixin, there'd be
     // useless child updates (since it really should just ride on parent's
     // update). That's ok for the purpose of the demo for now
+    var self = this;
     requestAnimationFrame(function next() {
       if (fuck++ > 9999) {
         throw 'asd';
       }
 
-      var stateI = this.stream.first();
-      this.stream = this.stream.rest();
-      this.setState(stateI.toObject());
+      var stateI = self.stream.first();
+      self.stream = self.stream.rest();
+      self.setState(stateI.toJS());
 
-      requestAnimationFrame(next.bind(this));
-    }.bind(this));
+      requestAnimationFrame(next);
+    });
   },
 };
 
@@ -95,6 +73,7 @@ var stateStream = {
   Mixin: stateStreamMixin,
   toRange: toRange,
   toMs: toMs,
+  toFrameCount: toFrameCount,
 };
 
 module.exports = stateStream;

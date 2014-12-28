@@ -49,9 +49,15 @@ var App1 = React.createClass({
 
   handleClick: function() {
     // key part! Alter the stream
+
     // for an infinite stream this is just asking for memory leak, since each
     // modification lazily accumulates functions to apply when a stream item is
-    // taken. This is just a trivial demo however
+    // taken. This is just a trivial demo however. Realistically we'd stop the
+    // stream to signal that for that point onward it's the same state value
+    // every frame
+
+    // note that we can't just initiate a new stream completely here; some state
+    // transformation might be happening and we'd lose them
     var newTurn = !this.stream.first().getIn(['childTurnLeft']);
     var s = this.stream.map(function(stateI) {
       return stateI.updateIn(['childTurnLeft'], function() {
