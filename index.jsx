@@ -1,5 +1,4 @@
 /*global -React */
-
 var React = require('react');
 var App1 = require('./App1.jsx');
 var App2 = require('./App2.jsx');

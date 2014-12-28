@@ -38,6 +38,7 @@ var Container = React.createClass({
       }
       configs[key] = {
         left: 0,
+        height: 60,
         opacity: 1,
       };
     }
@@ -61,30 +62,38 @@ var Container = React.createClass({
     }
 
     // TODO: do enters too
-    // TODO: handle more than 1 exit
     if (exits.length > 0) {
-      var exitKey = exits[0];
       var duration = 700;
       var frameCount = stateStream.toFrameCount(duration);
       var initState = this.state;
 
       var chunk = this.stream.take(frameCount).map(function(stateI, i) {
-        var newLeft = easingTypes.easeInOutQuad(
-          stateStream.toMs(i),
-          initState.configs[exitKey].left,
-          -200,
-          duration
-        );
-        var newOpacity = easingTypes.easeInOutQuad(
-          stateStream.toMs(i),
-          initState.configs[exitKey].opacity,
-          0,
-          duration
-        );
+        exits.forEach(function(exitKey) {
+          var newLeft = easingTypes.easeInOutQuad(stateStream.toMs(i),
+            initState.configs[exitKey].left,
+            -200,
+            duration
+          );
+          var newOpacity = easingTypes.easeInOutQuad(
+            stateStream.toMs(i),
+            initState.configs[exitKey].opacity,
+            0,
+            duration
+          );
+          var newHeight = easingTypes.easeInOutQuad(
+            stateStream.toMs(i),
+            initState.configs[exitKey].height,
+            0,
+            duration
+          );
 
-        return stateI
-          .updateIn(['configs', exitKey, 'left'], function() {return newLeft;})
-          .updateIn(['configs', exitKey, 'opacity'], function() {return newOpacity;});
+          stateI = stateI
+            .updateIn(['configs', exitKey, 'left'], function() {return newLeft;})
+            .updateIn(['configs', exitKey, 'height'], function() {return newHeight;})
+            .updateIn(['configs', exitKey, 'opacity'], function() {return newOpacity;});
+        });
+
+        return stateI;
       }).cacheResult();
 
       var children = React.Children.map(nextProps.children, function(child) {
@@ -93,9 +102,13 @@ var Container = React.createClass({
       children = I.Map(children);
 
       var restChunk = this.stream.skip(frameCount).map(function(stateI) {
-        return stateI
-          .removeIn(['configs', exitKey])
-          .updateIn(['children'], function() {return children;});
+        exits.forEach(function(exitKey) {
+          stateI = stateI
+            .removeIn(['configs', exitKey])
+            .updateIn(['children'], function() {return children;});
+        });
+
+        return stateI;
       }); // can't cacheResult here bc the perf would be horrible
 
       this.setStateStream(chunk.concat(restChunk));
@@ -111,6 +124,7 @@ var Container = React.createClass({
       }
       var s = {
         left: state.configs[key].left,
+        height: state.configs[key].height,
         opacity: state.configs[key].opacity,
         position: 'relative',
       };
