@@ -43,6 +43,9 @@ When I said first-class, I mean that we need to realize that unmounting transiti
 
 Thanks to this mentality (i.e. animation is really just a state stream), there are very little library-specific code here. Like, 40 lines (to change some existing React behaviors) + some general sequence helpers.
 
+## That Layout Problem
+During tweening, the layout might be in an invalid state (see demo 3 where the items are moving out). I don't think it's worth the time to design a layout system that accommodates these invalid states (also remember: that invalid state might last indefinitely. See previous bullet point). Fortunately, now that we have support to do layout in JS, I'm hoping that, under the hood, it places everything in `position: absolute` and that we can easily read/write the values from JS. The layout problem would therefore be solved under this stream system: the begin/end keyframes (states) are valid layouts and you tween the values in-between by modifying the absolute position (normally discouraged but legitimate for tweening).
+
 ## Optimizations
 This library is extremely underperformant for the moment, as I wanted to focus on the API. But there are huge perf boosts to be had. For one, currently the lazy seq doesn't cache (https://github.com/facebook/immutable-js/issues/263) so each `get` is linear time. Mori does and I might try it later. And I rAF `setState` each component so the leaf nodes get `log(n)` `setState`s per frame, lol.
 
