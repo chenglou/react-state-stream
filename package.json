@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.jsx",
   "scripts": {
-    "build": "webpack -w --module-bind 'jsx=jsx-loader' index.jsx --output-file out.js"
+    "build": "webpack --module-bind 'jsx=jsx-loader' index.jsx --output-file out.js",
+    "watch": "webpack -w --module-bind 'jsx=jsx-loader' index.jsx --output-file out.js"
   },
   "author": "Cheng Lou",
   "license": "MIT",
