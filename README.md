@@ -6,6 +6,8 @@ This is highly experimental. For a more stable and performant library, try [Reac
 
 Not providing a npm package for the moment. Actively looking for feedback since this might as well be the default React animation mechanism in the future.
 
+The current master branch uses [mori](https://github.com/swannodette/mori) because there are some distinctive features I need that are not yet in [immutable-js](https://github.com/facebook/immutable-js/). The latter version is in the other branch and is (even more) underperformant.
+
 ## What This Library Solves
 General animation API, including unmounting transition (and de-unmounting!). `npm install && npm run build` and open `index.html`. There are 3 demos (selectively comment out those in `index.jsx` to see each):
 
@@ -47,8 +49,8 @@ Thanks to this mentality (i.e. animation is really just a state stream), there a
 During tweening, the layout might be in an invalid state (see demo 3 where the items are moving out). I don't think it's worth the time to design a layout system that accommodates these invalid states (also remember: that invalid state might last indefinitely. See previous bullet point). Fortunately, now that we have support to do layout in JS, I'm hoping that, under the hood, it places everything in `position: absolute` and that we can easily read/write the values from JS. The layout problem would therefore be solved under this stream system: the begin/end keyframes (states) are valid layouts and you tween the values in-between by modifying the absolute position (normally discouraged but legitimate for tweening).
 
 ## Optimizations
-This library is extremely underperformant for the moment, as I wanted to focus on the API. But there are huge perf boosts to be had. For one, currently the lazy seq doesn't cache (https://github.com/facebook/immutable-js/issues/263) so each `get` is linear time. Mori does and I might try it later. And I rAF `setState` each component so the leaf nodes get `log(n)` `setState`s per frame, lol.
+This library is extremely underperformant for the moment, as I wanted to focus on the API. But there are huge perf boosts to be had. For one, I rAF `setState` each component so the leaf nodes get `log(n)` `setState`s per frame, lol.
 
 In the future, an infinite lazy seq won't do, since every `map` operation on it continues to accumulate more functions to apply to the items once they're getting evaluated. Fortunately, instead of doing `InfiniteRepeat(state)`, we can do `RepeatOnce(state)`; if the system sees that there's only one item to take out of the stream, it stops taking it and thus stops the rendering. So `setState(s)` and `RepeatOnce(state)` are conceptually equivalent. Conveniently, this stops the functions accumulation until we restart a new stream based on this final state value.
 
-Laziness is extremely important here. Same for persistent collections. I'm using [immutable-js](https://github.com/facebook/immutable-js), but as long as these aren't first-class in JS, we'll have to pay the extra cost of converting collections to JS, and vice-versa (unless we use persistent collection in React itself). This library probably runs much faster on ClojureScript right now if I had bothered. Now we sit and wait til lazy seqs and persistent collections become JS native in 20 years.
+Laziness is extremely important here. Same for persistent collections. As long as these aren't first-class in JS, we'll have to pay the extra cost of converting collections to JS, and vice-versa (unless we use persistent collection and lazy streams in React itself). This library probably runs much faster on ClojureScript right now if I had bothered. Now we sit and wait til lazy seqs and persistent collections become JS native in 20 years.
