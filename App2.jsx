@@ -1,21 +1,18 @@
 /*global -React */
 var React = require('react');
-var I = require('Immutable');
+var M = require('mori');
 var stateStream = require('./stateStream');
 var easingTypes = require('./easingTypes');
 
 var App2 = React.createClass({
   mixins: [stateStream.Mixin],
   getInitialStateStream: function() {
-    return stateStream.toRange(999999).map(function(ms, i) {
-      return I.fromJS({
+    return M.map(function() {
+      return M.js_to_clj({
         blockX: [50, 400],
         goingLeft: [false, true],
       });
-    }).cacheResult();
-    // force evaluate the whole seq. "The fuck are you doing cheng lou?" Sorry
-    // but there's no gradual caching and I don't want linear time `first()`
-    // every single time in handleClick
+    }, stateStream.toRange(999999));
   },
 
   handleClick: function() {
@@ -26,31 +23,27 @@ var App2 = React.createClass({
       initState.goingLeft[0] ? 50 : 300,
       initState.goingLeft[1] ? 100 : 400,
     ];
-    var newGoingLeft = I.List([!initState.goingLeft[0], !initState.goingLeft[1]]);
+    var newGoingLeft = M.vector(!initState.goingLeft[0], !initState.goingLeft[1]);
     // the convention should be to always access this.state (rather than
     // this.stream) in render and always access this.stream elsewhere. Here we
     // break the convention a bit for simpler code (currently, stream head is
     // the next state, not the current one)
-    var chunk = this.stream.take(frameCount).map(function(stateI, i) {
+    var chunk = M.map(function(stateI, i) {
       var ms = stateStream.toMs(i);
-      var newBlockX = I.List([
+      var newBlockX = M.vector(
         easingTypes.easeInOutQuad(ms, initState.blockX[0], finalX[0], duration),
-        easingTypes.easeOutBounce(ms, initState.blockX[1], finalX[1], duration),
-      ]);
+        easingTypes.easeOutBounce(ms, initState.blockX[1], finalX[1], duration)
+      );
 
-      return stateI
-        .setIn(['blockX'], newBlockX)
-        .setIn(['goingLeft'], newGoingLeft);
-    }).cacheResult();
+      return M.assoc(stateI, 'blockX', newBlockX, 'goingLeft', newGoingLeft);
+    }, M.take(frameCount, this.stream), M.range());
 
-    var finalXI = I.List(finalX);
-    var restChunk = this.stream.skip(frameCount).map(function(stateI) {
-      return stateI
-        .setIn(['blockX'], finalXI)
-        .setIn(['goingLeft'], newGoingLeft);
-    }); // can't cacheResult here bc the perf would be horrible
+    var finalXI = M.js_to_clj(finalX);
+    var restChunk = M.map(function(stateI) {
+      return M.assoc(stateI, 'blockX', finalXI, 'goingLeft', newGoingLeft);
+    }, M.drop(frameCount, this.stream));
 
-    this.setStateStream(chunk.concat(restChunk));
+    this.setStateStream(M.concat(chunk, restChunk));
   },
 
   render: function() {
