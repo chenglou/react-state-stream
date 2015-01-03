@@ -1,6 +1,6 @@
 /*global -React */
 var React = require('react');
-var I = require('Immutable');
+var M = require('mori');
 var stateStream = require('./stateStream');
 var easingTypes = require('./easingTypes');
 
@@ -40,15 +40,14 @@ var Container = React.createClass({
       };
     }
 
-    children = I.Map(children);
-    configs = I.fromJS(configs);
+    var state = M.js_to_clj({
+      children: children,
+      configs: configs,
+    });
 
-    return stateStream.toRange(999999).map(function(ms, i) {
-      return I.Map({
-        configs: configs,
-        children: children,
-      });
-    }, this);
+    return M.map(function() {
+      return state;
+    }, stateStream.toRange(999999));
   },
 
   componentWillUpdate: function(nextProps) {
@@ -61,7 +60,7 @@ var Container = React.createClass({
       return;
     }
 
-    var children = I.Map(toObj(nextProps.children));
+    var children = M.js_to_clj(toObj(nextProps.children));
     var duration = 700;
     var frameCount = stateStream.toFrameCount(duration);
     var initState = this.state;
@@ -69,67 +68,67 @@ var Container = React.createClass({
 
     if (exits.length > 0) {
 
-      var chunk = newStream.take(frameCount).map(function(stateI, i) {
+      var chunk = M.map(function(stateI, i) {
         exits.forEach(function(exitKey) {
           var ms = stateStream.toMs(i);
           var config = initState.configs[exitKey];
 
-          stateI = stateI.setIn(['configs', exitKey], I.Map({
-            left: easingTypes.easeInOutQuad(ms, config.left, -200, duration),
-            opacity: easingTypes.easeInOutQuad(ms, config.opacity, 0, duration),
-            height: easingTypes.easeInOutQuad(ms, config.height, 0, duration),
-          }));
+          stateI = M.assoc_in(stateI, ['configs', exitKey], M.hash_map(
+            'left', easingTypes.easeInOutQuad(ms, config.left, -200, duration),
+            'opacity', easingTypes.easeInOutQuad(ms, config.opacity, 0, duration),
+            'height', easingTypes.easeInOutQuad(ms, config.height, 0, duration)
+          ));
         });
 
         return stateI;
-      }).cacheResult();
+      }, M.take(frameCount, newStream), M.range());
 
-      var restChunk = newStream.skip(frameCount).map(function(stateI) {
+      var restChunk = M.map(function(stateI) {
         exits.forEach(function(exitKey) {
-          stateI = stateI
-            .removeIn(['configs', exitKey])
-            .setIn(['children'], children);
+          stateI = M.assoc(
+            stateI,
+            'children', children,
+            'configs', M.dissoc(M.get(stateI, 'configs'), exitKey)
+          );
         });
 
         return stateI;
-      }); // can't cacheResult here bc the perf would be horrible
+      }, M.drop(frameCount, newStream)); // can't cacheResult here bc the perf would be horrible
 
-      newStream = chunk.concat(restChunk);
+      newStream = M.concat(chunk, restChunk);
     }
 
     if (enters.length > 0) {
-      var chunk2 = newStream.take(frameCount).map(function(stateI, i) {
+      var chunk2 = M.map(function(stateI, i) {
         enters.forEach(function(enterKey) {
           var ms = stateStream.toMs(i);
           var config = initState.configs[enterKey];
 
-          stateI = stateI
-            .setIn(['configs', enterKey], I.Map({
-              left: easingTypes.easeInOutQuad(ms, config.left, 0, duration),
-              opacity: easingTypes.easeInOutQuad(ms, config.opacity, 1, duration),
-              height: easingTypes.easeInOutQuad(ms, config.height, 60, duration),
-            }))
-            .setIn(['children'], children);
+          stateI = M.assoc_in(stateI, ['configs', enterKey], M.hash_map(
+            'left', easingTypes.easeInOutQuad(ms, config.left, 0, duration),
+            'opacity', easingTypes.easeInOutQuad(ms, config.opacity, 1, duration),
+            'height', easingTypes.easeInOutQuad(ms, config.height, 60, duration)
+          ));
+          stateI = M.assoc(stateI, 'children', children);
         });
 
         return stateI;
-      }).cacheResult();
+      }, M.take(frameCount, newStream), M.range());
 
-      var restChunk2 = newStream.skip(frameCount).map(function(stateI) {
+      var restChunk2 = M.map(function(stateI) {
         enters.forEach(function(enterKey) {
-          stateI = stateI
-            .setIn(['configs', enterKey], I.Map({
-              left: 0,
-              height: 60,
-              opacity: 1,
-            }))
-            .setIn(['children'], children);
+          stateI = M.assoc_in(stateI, ['configs', enterKey], M.hash_map(
+            'left', 0,
+            'height', 60,
+            'opacity', 1
+          ));
+          stateI = M.assoc(stateI, 'children', children);
         });
 
         return stateI;
-      }); // can't cacheResult here bc the perf would be horrible
+      }, M.drop(frameCount, newStream));
 
-      newStream = chunk2.concat(restChunk2);
+      newStream = M.concat(chunk2, restChunk2);
     }
 
     this.setStateStream(newStream);
@@ -154,6 +153,8 @@ var Container = React.createClass({
         <div style={s} key={key}>{state.children[key]}</div>
       );
     }
+
+
     return (
       <div>
         {children}
