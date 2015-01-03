@@ -1,22 +1,24 @@
 /*global -React */
 var React = require('react');
-var I = require('Immutable');
+var M = require('mori');
 var stateStream = require('./stateStream');
 
 var Child = React.createClass({
   mixins: [stateStream.Mixin],
   getInitialStateStream: function() {
-    return stateStream.toRange(999999).map(function(ms, i) {
+    var self = this;
+    return M.map(function() {
       // note that we use this.props here, and because of laziless, we know it's
       // gonna be the very current value of props (when the item is evaluated).
       // This is abusing the behavior of laziness and likely not a good idea
       // (e.g. in clojure, lazy seqs are chunked 32 items at time rather than 1,
       // so this shortcut wouldn't work)
-      return I.Map({
+      return M.hash_map(
         // *3 to offset the parent rotation. Just some visual nit
-        deg: ((this.state && this.state.deg) || 0) + 2 * (this.props.turnLeft ? -1 : 3)
-      });
-    }, this);
+        'deg',
+        ((self.state && self.state.deg) || 0) + 2 * (self.props.turnLeft ? -1 : 3)
+      );
+    }, stateStream.toRange(999999));
   },
 
   render: function() {
@@ -40,12 +42,12 @@ var Child = React.createClass({
 var App1 = React.createClass({
   mixins: [stateStream.Mixin],
   getInitialStateStream: function() {
-    return stateStream.toRange(999999).map(function(ms, i) {
-      return I.Map({
-        deg: i * -2,
-        childTurnLeft: false,
-      });
-    });
+    return M.map(function(a, i) {
+      return M.hash_map(
+        'deg', i * -2,
+        'childTurnLeft', false
+      );
+    }, stateStream.toRange(999999), M.range());
   },
 
   handleClick: function() {
@@ -59,10 +61,10 @@ var App1 = React.createClass({
 
     // note that we can't just initiate a new stream completely here; some state
     // transformation might be happening and we'd lose them
-    var newTurn = !this.stream.first().getIn(['childTurnLeft']);
-    var s = this.stream.map(function(stateI) {
-      return stateI.setIn(['childTurnLeft'], newTurn);
-    });
+    var newTurn = !M.get(M.first(this.stream), 'childTurnLeft');
+    var s = M.map(function(stateI) {
+      return M.assoc(stateI, 'childTurnLeft', newTurn);
+    }, this.stream);
 
     this.setStateStream(s);
   },

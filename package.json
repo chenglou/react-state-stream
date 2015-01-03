@@ -18,7 +18,7 @@
     "webpack": "^1.4.13"
   },
   "dependencies": {
-    "immutable": "^3.4.1",
+    "mori": "^0.2.9",
     "react": "^0.12.1"
   }
 }
