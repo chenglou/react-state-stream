@@ -63,13 +63,13 @@ var App2 = React.createClass({
       display: 'inline-block',
       padding: 20,
       position: 'relative',
-      top: 50,
+      top: 60,
       WebkitTransform: 'translate3d(' + this.state.blockX[1] + 'px,0,0)',
       transform: 'translate3d(' + this.state.blockX[1] + 'px,0,0)',
     };
 
     return (
-      <div>
+      <div style={{height: 120}}>
         <button onClick={this.handleClick}>Click</button>
         <div style={s1}></div>
         <div style={s2}></div>

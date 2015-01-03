@@ -1,6 +1,6 @@
 # React State Stream
 
-React animation on steroid.
+React animation on steroid. [Live demo](https://rawgit.com/chenglou/react-state-stream/master/index.html).
 
 This is highly experimental. For a more stable and performant library, try [React Tween State](https://github.com/chenglou/react-tween-state).
 
@@ -9,7 +9,7 @@ Not providing a npm package for the moment. Actively looking for feedback since 
 The current master branch uses [mori](https://github.com/swannodette/mori) because there are some distinctive features I need that are not yet in [immutable-js](https://github.com/facebook/immutable-js/). The latter version is in the other branch and is (even more) underperformant.
 
 ## What This Library Solves
-General animation API, including unmounting transition (and de-unmounting!). `npm install && npm run build` and open `index.html`. There are 3 demos (selectively comment out those in `index.jsx` to see each):
+General animation API, including unmounting transition (and de-unmounting!). `npm install && npm run build` and open `index.html`. There are 3 demos:
 
   1. Infinitely spinning child inside infinitely spinning parent.
   2. Normal tweening animation using third-party easing functions.

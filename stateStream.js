@@ -20,11 +20,7 @@ function requestAnimationFrame2(f) {
 
 var stateStreamMixin = {
   setStateStream: function(stream) {
-    // set the state at the same time immediately. Don't wait til next frame
-    // this is probably a desired behavior
-    var state = M.clj_to_js(M.first(stream));
-    this.stream = M.rest(stream);
-    this.setState(state);
+    this.stream = stream;
   },
 
   componentWillMount: function() {

@@ -27,7 +27,7 @@ var Child = React.createClass({
       border: '1px solid gray',
       borderRadius: '20px',
       display: 'inline-block',
-      padding: 22,
+      padding: 18,
       WebkitTransform: 'rotate(' + this.state.deg + 'deg)',
       transform: 'rotate(' + this.state.deg + 'deg)',
     };
@@ -74,13 +74,13 @@ var App1 = React.createClass({
       border: '1px solid gray',
       borderRadius: '30px',
       display: 'inline-block',
-      padding: 50,
+      padding: 30,
       WebkitTransform: 'rotate(' + this.state.deg + 'deg)',
       transform: 'rotate(' + this.state.deg + 'deg)',
       marginLeft: 100,
     };
     return (
-      <div>
+      <div style={{height: 200}}>
         <button onClick={this.handleClick}>Click</button>
         <div style={s}>
           <Child turnLeft={this.state.childTurnLeft}></Child>
