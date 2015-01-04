@@ -10,6 +10,21 @@ function toObj(children) {
   });
 }
 
+function toKeyValueList(obj) {
+  var arr = [];
+
+  for (var key in obj) {
+    if (obj.hasOwnProperty(key)) {
+      arr.push({
+        key: key,
+        value: obj[key]
+      });
+    }
+  }
+
+  return arr;
+}
+
 function diff(o1, o2) {
   var res = [];
   for (var key in o1) {
@@ -41,7 +56,7 @@ var Container = React.createClass({
     }
 
     return M.repeat(1, M.js_to_clj({
-      children: children,
+      children: toKeyValueList(children),
       configs: configs,
     }));
   },
@@ -56,7 +71,7 @@ var Container = React.createClass({
       return;
     }
 
-    var children = M.js_to_clj(toObj(nextProps.children));
+    var children = M.js_to_clj(toKeyValueList(o1));
     var duration = 700;
     var frameCount = stateStream.toFrameCount(duration);
     var initState = this.state;
@@ -132,11 +147,9 @@ var Container = React.createClass({
 
   render: function() {
     var state = this.state;
-    var children = [];
-    for (var key in state.children) {
-      if (!state.children.hasOwnProperty(key)) {
-        continue;
-      }
+    var children = state.children.map(function (kv) {
+      var key = kv.key;
+      var child = kv.value;
       var s = {
         left: state.configs[key].left,
         height: state.configs[key].height,
@@ -145,11 +158,9 @@ var Container = React.createClass({
         overflow: 'hidden',
         WebkitUserSelect: 'none',
       };
-      children.push(
-        <div style={s} key={key}>{state.children[key]}</div>
-      );
-    }
 
+      return <div style={s} key={key}>{child}</div>;
+    });
 
     return (
       <div>
