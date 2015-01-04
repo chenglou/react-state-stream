@@ -40,14 +40,10 @@ var Container = React.createClass({
       };
     }
 
-    var state = M.js_to_clj({
+    return M.repeat(1, M.js_to_clj({
       children: children,
       configs: configs,
-    });
-
-    return M.map(function() {
-      return state;
-    }, stateStream.toRange(999999));
+    }));
   },
 
   componentWillUpdate: function(nextProps) {
@@ -81,7 +77,7 @@ var Container = React.createClass({
         });
 
         return stateI;
-      }, M.take(frameCount, newStream), M.range());
+      }, stateStream.take2(frameCount, newStream), M.range());
 
       var restChunk = M.map(function(stateI) {
         exits.forEach(function(exitKey) {
@@ -113,7 +109,7 @@ var Container = React.createClass({
         });
 
         return stateI;
-      }, M.take(frameCount, newStream), M.range());
+      }, stateStream.take2(frameCount, newStream), M.range());
 
       var restChunk2 = M.map(function(stateI) {
         enters.forEach(function(enterKey) {

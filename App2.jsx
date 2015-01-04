@@ -7,12 +7,10 @@ var easingTypes = require('./easingTypes');
 var App2 = React.createClass({
   mixins: [stateStream.Mixin],
   getInitialStateStream: function() {
-    return M.map(function() {
-      return M.js_to_clj({
-        blockX: [50, 400],
-        goingLeft: [false, true],
-      });
-    }, stateStream.toRange(999999));
+    return M.repeat(1, M.js_to_clj({
+      blockX: [50, 400],
+      goingLeft: [false, true],
+    }));
   },
 
   handleClick: function() {
@@ -36,7 +34,7 @@ var App2 = React.createClass({
       );
 
       return M.assoc(stateI, 'blockX', newBlockX, 'goingLeft', newGoingLeft);
-    }, M.take(frameCount, this.stream), M.range());
+    }, stateStream.take2(frameCount, this.stream), M.range());
 
     var finalXI = M.js_to_clj(finalX);
     var restChunk = M.map(function(stateI) {

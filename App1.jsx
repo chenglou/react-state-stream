@@ -7,18 +7,17 @@ var Child = React.createClass({
   mixins: [stateStream.Mixin],
   getInitialStateStream: function() {
     var self = this;
-    return M.map(function() {
+    return M.iterate(function(state) {
       // note that we use this.props here, and because of laziless, we know it's
       // gonna be the very current value of props (when the item is evaluated).
       // This is abusing the behavior of laziness and likely not a good idea
       // (e.g. in clojure, lazy seqs are chunked 32 items at time rather than 1,
       // so this shortcut wouldn't work)
       return M.hash_map(
-        // *3 to offset the parent rotation. Just some visual nit
         'deg',
-        ((self.state && self.state.deg) || 0) + 2 * (self.props.turnLeft ? -1 : 3)
+        M.get(state, 'deg') + 2 * (self.props.turnLeft ? -1 : 3)
       );
-    }, stateStream.toRange(999999));
+    }, M.hash_map('deg', 0));
   },
 
   render: function() {

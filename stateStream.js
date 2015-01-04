@@ -18,18 +18,26 @@ function requestAnimationFrame2(f) {
   }, 1000/60);
 }
 
+function onlyOneLeft(seq) {
+  return M.count(M.take(2, seq)) === 1;
+}
+
+// when a stream has size 4 and you want to map a tween of size 10, you don't
+// wanna manually extend the stream to 10. This helper does it and fill it with
+// the last value of the stream
+function take2(n, seq) {
+  var s = M.take(n, seq);
+  var length = M.count(s);
+  if (length === n) {
+    return s;
+  }
+  return M.concat(s, M.repeat(n - length, M.last(s)));
+}
+
 var stateStreamMixin = {
   setStateStream: function(stream) {
     this.stream = stream;
-  },
-
-  componentWillMount: function() {
-    if (this.getInitialStateStream) {
-      // first value taken by getInitialState below
-      this.stream = M.rest(this.getInitialStateStream());
-    } else {
-      this.stream = M.repeat(M.hash_map());
-    }
+    this.startRaf();
   },
 
   getInitialState: function() {
@@ -43,19 +51,41 @@ var stateStreamMixin = {
     return s;
   },
 
-  componentDidMount: function() {
+  componentWillMount: function() {
+    if (this.getInitialStateStream) {
+      this.stream = this.getInitialStateStream();
+    } else {
+      this.stream = M.repeat(1, M.hash_map());
+    }
+  },
+
+  startRaf: function() {
     // current implementation of the mixin is basic and doesn't optimize for the
     // fact that if a parent and child both include the mixin, there'd be
     // useless child updates (since it really should just ride on parent's
     // update). That's ok for the purpose of the demo for now
     var self = this;
+    if (self._rafing) {
+      return;
+    }
+    self._rafing = true;
+
     requestAnimationFrame(function next() {
-      var stateI = M.first(self.stream);
+      if (onlyOneLeft(self.stream)) {
+        // already evaluated it
+        self._rafing = false;
+        return;
+      }
       self.stream = M.rest(self.stream);
+      var stateI = M.first(self.stream); // check order here
       self.setState(M.clj_to_js(stateI));
 
       requestAnimationFrame(next);
     });
+  },
+
+  componentDidMount: function() {
+    this.startRaf();
   },
 };
 
@@ -64,6 +94,7 @@ var stateStream = {
   toRange: toRange,
   toMs: toMs,
   toFrameCount: toFrameCount,
+  take2: take2,
 };
 
 module.exports = stateStream;
