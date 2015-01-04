@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.jsx",
   "scripts": {
-    "build": "webpack --module-bind 'jsx=jsx-loader' index.jsx --output-file out.js",
-    "watch": "webpack -w --module-bind 'jsx=jsx-loader' index.jsx --output-file out.js"
+    "watch": "node devServer.js",
+    "build": "./node_modules/.bin/webpack --config webpack.config.js"
   },
   "author": "Cheng Lou",
   "license": "MIT",
@@ -15,7 +15,9 @@
   "homepage": "https://github.com/chenglou/react-set-state-stream",
   "devDependencies": {
     "jsx-loader": "^0.12.2",
-    "webpack": "^1.4.13"
+    "webpack": "^1.4.13",
+    "react-hot-loader": "^1.0.7",
+    "webpack-dev-server": "1.6.4"
   },
   "dependencies": {
     "mori": "^0.2.9",

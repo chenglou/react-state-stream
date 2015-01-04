@@ -163,6 +163,10 @@ var Container = React.createClass({
   }
 });
 
+if (module.makeHot) {
+  Container = module.makeHot(Container);
+}
+
 // notice that this component is ignorant of both immutable-js and the animation
 var App3 = React.createClass({
   getInitialState: function() {
