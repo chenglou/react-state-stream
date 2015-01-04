@@ -101,9 +101,9 @@ var Container = React.createClass({
           var config = initState.configs[enterKey];
 
           stateI = M.assoc_in(stateI, ['configs', enterKey], M.hash_map(
-            'left', easingTypes.easeInOutQuad(ms, config.left, 0, duration),
-            'opacity', easingTypes.easeInOutQuad(ms, config.opacity, 1, duration),
-            'height', easingTypes.easeInOutQuad(ms, config.height, 60, duration)
+            'left', easingTypes.easeInOutQuad(ms, config ? config.left : -200, 0, duration),
+            'opacity', easingTypes.easeInOutQuad(ms, config ? config.opacity : 0, 1, duration),
+            'height', easingTypes.easeInOutQuad(ms, config ? config.height : 0, 60, duration)
           ));
           stateI = M.assoc(stateI, 'children', children);
         });
@@ -167,7 +167,7 @@ var App3 = React.createClass({
     };
   },
 
-  handleClick: function(item) {
+  handleItemClick: function(item) {
     var items = this.state.items;
     var idx = items.indexOf(item);
     if (idx === -1) {
@@ -184,6 +184,18 @@ var App3 = React.createClass({
     });
   },
 
+  handleAddClick: function() {
+    var items = this.state.items,
+        lastItem = items[items.length - 1] || '`'; // 'a' is next
+
+    items.push(String.fromCharCode(lastItem.charCodeAt(0) + 1));
+    items.sort();
+
+    this.setState({
+      items: items,
+    });
+  },
+
   render: function() {
     var s = {
       width: 100,
@@ -194,14 +206,18 @@ var App3 = React.createClass({
 
     return (
       <div>
-        Click to remove. Double click to un-remove (!)
+        <p>Click to remove. Double click to un-remove (!)</p>
+        <button style={{ marginBottom: 30 }}
+                onClick={this.handleAddClick}>
+          Add item
+        </button>
         <Container>
           {this.state.items.map(function(item) {
             return (
               <div
                 style={s}
                 key={item}
-                onClick={this.handleClick.bind(null, item)}>
+                onClick={this.handleItemClick.bind(null, item)}>
                 {item}
               </div>
             );
