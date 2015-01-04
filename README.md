@@ -16,7 +16,7 @@ General animation API, including unmounting transition (and de-unmounting!). `np
   3. Non-blocking unmounting and de-unmounting list.
 
 ## General Concept
-Instead of one state, set all the states that will ever be, aka a state stream. This is akin to FRP but uses an ordinary `LazySeq<State>`. Also reminiscent of Flash's timeline.
+Instead of one state, set all the states that will ever be, aka a lazy state stream. This is akin to FRP but uses an ordinary `LazySeq<State>`. Also reminiscent of Flash's timeline.
 
 A normal tween can simply be expressed as a map over a chunk of the lazy seq. Same for physics engine. Works even if the tween never stops (e.g. a physics engine where a menu item floats in mid air).
 
@@ -46,11 +46,13 @@ When I said first-class, I mean that we need to realize that unmounting transiti
 Thanks to this mentality (i.e. animation is really just a state stream), there are very little library-specific code here. Like, 40 lines (to change some existing React behaviors) + some general sequence helpers.
 
 ## That Layout Problem
-During tweening, the layout might be in an invalid state (see demo 3 where the items are moving out). I don't think it's worth the time to design a layout system that accommodates these invalid states (also remember: that invalid state might last indefinitely. See previous bullet point). Fortunately, now that we have support to do layout in JS, I'm hoping that, under the hood, it places everything in `position: absolute` and that we can easily read/write the values from JS. The layout problem would therefore be solved under this stream system: the begin/end keyframes (states) are valid layouts and you tween the values in-between by modifying the absolute position (normally discouraged but legitimate for tweening).
+During tweening, the layout might be in an invalid state (see demo 3 where the items are moving out). I don't think it's worth the time to design a layout system that accommodates these invalid states (also remember: that invalid state might last indefinitely. See previous bullet point). Fortunately, now that we have support to do [layout in JS](https://github.com/facebook/css-layout), I'm hoping that, under the hood, it places everything in `position: absolute` and that we can easily read/write the values from JS. The layout problem would therefore be solved under this state stream system: the begin/end keyframes (states) are valid layouts, and you tween the values in-between by modifying the absolute position (normally discouraged but legitimate for tweening).
 
 ## Optimizations
-This library is extremely underperformant for the moment, as I wanted to focus on the API. But there are huge perf boosts to be had. For one, I rAF `setState` each component so the leaf nodes get `log(n)` `setState`s per frame, lol.
+This library is not super performance currently, as I wanted to focus on the API. But there are huge perf boosts to be had. For one, I rAF `setState` each component so the leaf nodes get `log(n)` `setState`s per frame, lol.
 
-In the future, an infinite lazy seq won't do, since every `map` operation on it continues to accumulate more functions to apply to the items once they're getting evaluated. Fortunately, instead of doing `InfiniteRepeat(state)`, we can do `RepeatOnce(state)`; if the system sees that there's only one item to take out of the stream, it stops taking it and thus stops the rendering. So `setState(s)` and `RepeatOnce(state)` are conceptually equivalent. Conveniently, this stops the functions accumulation until we restart a new stream based on this final state value.
+One thing to be careful about is doing an infinite animation like in demo 1. Since we're mapping over an infinite lazy stream, every modification to it (that corresponds to a new `map`) will accumulate until that item gets evaluated. For dealing with infinite animations, we'll expose a few specific helpers in the future.
 
-Laziness is extremely important here. Same for persistent collections. As long as these aren't first-class in JS, we'll have to pay the extra cost of converting collections to JS, and vice-versa (unless we use persistent collection and lazy streams in React itself). This library probably runs much faster on ClojureScript right now if I had bothered. Now we sit and wait til lazy seqs and persistent collections become JS native in 20 years.
+For all other terminating animations, make the stream finite. Upon reaching the last cell, the each-frame rendering will halt (so conceptually, [state] of length 1 is the same as current react state). This also conveniently puts an end to all accumulated `map` callback evaluations.
+
+Laziness is important here, as are persistent collections. As long as these aren't first-class in JS, we'll have to pay the extra cost of converting collections to JS, and vice-versa (unless we use persistent collection and lazy streams in React itself). This library probably runs much faster on ClojureScript right now if I had bothered. Now we sit and wait til lazy seqs and persistent collections become JS native in 20 years.
