@@ -6,13 +6,16 @@ var easingTypes = require('./easingTypes');
 
 var App2 = React.createClass({
   mixins: [stateStream.Mixin],
+
+  getInitialStateStreamTick: function () {
+    return M.js_to_clj({
+      blockX: [50, 400],
+      goingLeft: [false, true],
+    });
+  },
+
   getInitialStateStream: function() {
-    return M.map(function() {
-      return M.js_to_clj({
-        blockX: [50, 400],
-        goingLeft: [false, true],
-      });
-    }, stateStream.toRange(999999));
+    return M.map(this.getInitialStateStreamTick, stateStream.toRange(999999));
   },
 
   handleClick: function() {
