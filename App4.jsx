@@ -3,11 +3,26 @@ var React = require('react');
 var M = require('mori');
 var stateStream = require('./stateStream');
 var easingTypes = require('./easingTypes');
+var ReactInputSelection = require('react/lib/ReactInputSelection');
 
 function toObj(children) {
   return React.Children.map(children, function(child) {
     return child;
   });
+}
+
+function diff(o1, o2) {
+  var res = [];
+  for (var key in o1) {
+    if (!o1.hasOwnProperty(key)) {
+      continue;
+    }
+    if (!o2.hasOwnProperty(key)) {
+      res.push(key);
+    }
+  }
+
+  return res;
 }
 
 function toKeyValueList(obj) {
@@ -25,20 +40,6 @@ function toKeyValueList(obj) {
   return arr;
 }
 
-function diff(o1, o2) {
-  var res = [];
-  for (var key in o1) {
-    if (!o1.hasOwnProperty(key)) {
-      continue;
-    }
-    if (!o2.hasOwnProperty(key)) {
-      res.push(key);
-    }
-  }
-
-  return res;
-}
-
 var Container = React.createClass({
   mixins: [stateStream.Mixin],
   getInitialStateStream: function() {
@@ -49,9 +50,8 @@ var Container = React.createClass({
         continue;
       }
       configs[key] = {
-        left: 0,
-        height: 60,
-        opacity: 1,
+        top: 0,
+        opacity: 1
       };
     }
 
@@ -72,7 +72,7 @@ var Container = React.createClass({
     }
 
     var children = M.js_to_clj(toKeyValueList(o1));
-    var duration = 700;
+    var duration = 2500;
     var frameCount = stateStream.toFrameCount(duration);
     var initState = this.state;
     var newStream = this.stream;
@@ -85,9 +85,8 @@ var Container = React.createClass({
           var config = initState.configs[exitKey];
 
           stateI = M.assoc_in(stateI, ['configs', exitKey], M.hash_map(
-            'left', easingTypes.easeInOutQuad(ms, config.left, -200, duration),
-            'opacity', easingTypes.easeInOutQuad(ms, config.opacity, 0, duration),
-            'height', easingTypes.easeInOutQuad(ms, config.height, 0, duration)
+            'top', easingTypes.easeInOutQuad(ms, config.top, -200, duration),
+            'opacity', easingTypes.easeInOutQuad(ms, config.opacity, 0, duration)
           ));
         });
 
@@ -116,9 +115,8 @@ var Container = React.createClass({
           var config = initState.configs[enterKey];
 
           stateI = M.assoc_in(stateI, ['configs', enterKey], M.hash_map(
-            'left', easingTypes.easeInOutQuad(ms, config.left, 0, duration),
-            'opacity', easingTypes.easeInOutQuad(ms, config.opacity, 1, duration),
-            'height', easingTypes.easeInOutQuad(ms, config.height, 60, duration)
+            'top', easingTypes.easeInOutQuad(ms, config ? config.top : -200, 0, duration),
+            'opacity', easingTypes.easeInOutQuad(ms, config ? config.opacity : 0, 1, duration)
           ));
           stateI = M.assoc(stateI, 'children', children);
         });
@@ -129,8 +127,7 @@ var Container = React.createClass({
       var restChunk2 = M.map(function(stateI) {
         enters.forEach(function(enterKey) {
           stateI = M.assoc_in(stateI, ['configs', enterKey], M.hash_map(
-            'left', 0,
-            'height', 60,
+            'top', 0,
             'opacity', 1
           ));
           stateI = M.assoc(stateI, 'children', children);
@@ -145,21 +142,29 @@ var Container = React.createClass({
     this.setStateStream(newStream);
   },
 
+  componentDidUpdate: function (prevProps, prevState) {
+    var o1 = toObj(this.state.children),
+        o2 = toObj(prevState.children);
+
+    if (diff(o1, o2).length || diff(o2, o1).length) {
+      this.props.onUpdate();
+    }
+  },
+
   render: function() {
     var state = this.state;
+
     var children = state.children.map(function (kv) {
       var key = kv.key;
       var child = kv.value;
       var s = {
-        left: state.configs[key].left,
-        height: state.configs[key].height,
+        top: state.configs[key].top,
         opacity: state.configs[key].opacity,
         position: 'relative',
         overflow: 'hidden',
         WebkitUserSelect: 'none',
       };
-
-      return <div style={s} key={key}>{child}</div>;
+      return <span style={s} key={key}>{child}</span>;
     });
 
     return (
@@ -170,57 +175,111 @@ var Container = React.createClass({
   }
 });
 
-// notice that this component is ignorant of both immutable-js and the animation
-var App3 = React.createClass({
-  getInitialState: function() {
+var nextUuid = 0;
+function toIndexedChars(s) {
+  return s.split('').map(function (char) {
     return {
-      items: ['a', 'b', 'c', 'd'],
+      uuid: nextUuid++,
+      char: char
+    };
+  });
+}
+
+// notice that this component is ignorant of both immutable-js and the animation
+var App4 = React.createClass({
+  getInitialState: function () {
+    return {
+      chars: toIndexedChars('Click on me and type something')
     };
   },
 
-  handleClick: function(item) {
-    var items = this.state.items;
-    var idx = items.indexOf(item);
-    if (idx === -1) {
-      // might not find the clicked item because it's transitioning out and
-      // doesn't technically exist here in the parent anymore. Make it
-      // transition back (BEAT THAT)
-      items.push(item);
-      items.sort();
-    } else {
-      items.splice(idx, 1);
+  handleKeyDown: function (e) {
+    // for now, only handle backspace
+    if (e.keyCode !== 8) {
+      return;
     }
+
+    e.preventDefault();
+
+    var chars = this.state.chars;
+    var selection = this.getSelection();
+    var from = Math.min(selection.start, selection.end);
+    var to = Math.max(selection.start, selection.end);
+
+    if (to > from) {
+      chars.splice(from, to - from);
+      this.setSelection({ start: from });
+    } else if (from > 0) {
+      chars.splice(from - 1, 1);
+      this.setSelection({ start: from - 1 });
+    }
+
     this.setState({
-      items: items,
+      chars: chars
     });
   },
 
-  render: function() {
-    var s = {
-      width: 100,
-      padding: 20,
-      border: '1px solid gray',
-      borderRadius: 3,
-    };
+  handleKeyPress: function (e) {
+    e.preventDefault();
 
+    var chars = this.state.chars;
+    var selection = this.getSelection();
+    var from = Math.min(selection.start, selection.end);
+    var to = Math.max(selection.start, selection.end);
+
+    chars.splice(from, to - from, toIndexedChars(String.fromCharCode(e.charCode))[0]);
+
+    this.setSelection({
+      start: from + 1
+    });
+
+    this.setState({
+      chars: chars
+    });
+  },
+
+  getSelection: function() {
+    return this._pendingSelection || ReactInputSelection.getSelection(this.getDOMNode());
+  },
+
+  setSelection: function(selection) {
+    if (typeof selection.end === 'undefined') {
+      selection.end = selection.start;
+    }
+
+    this._pendingSelection = selection;
+  },
+
+  flushPendingSelection: function () {
+    if (this._pendingSelection) {
+      ReactInputSelection.setSelection(this.getDOMNode(), this._pendingSelection);
+      delete this._pendingSelection;
+    }
+  },
+
+  handleContainerUpdate: function() {
+    this.flushPendingSelection();
+  },
+
+  render: function() {
     return (
-      <div>
-        Click to remove. Double click to un-remove (!)
-        <Container>
-          {this.state.items.map(function(item) {
+      <div style={{ marginTop: 20 }}
+           contentEditable
+           onKeyPress={this.handleKeyPress}
+           onKeyDown={this.handleKeyDown}>
+        <Container onUpdate={this.handleContainerUpdate}>
+          {this.state.chars.map(function (char) {
             return (
-              <div
-                style={s}
-                key={item}
-                onClick={this.handleClick.bind(null, item)}>
-                {item}
-              </div>
+              <span key={char.uuid}
+                    style={{whiteSpace: 'pre'}}>
+                {char.char}
+              </span>
             );
-          }, this)}
+          })}
         </Container>
       </div>
     );
   }
 });
 
-module.exports = App3;
+module.exports = App4;
