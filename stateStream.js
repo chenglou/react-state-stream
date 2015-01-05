@@ -44,7 +44,6 @@ function drop2(n, seq) {
   return M.repeat(1, M.last(seq));
 }
 
-
 var stateStreamMixin = {
   setStateStream: function(stream) {
     this.stream = stream;

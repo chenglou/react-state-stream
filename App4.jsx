@@ -3,6 +3,7 @@ var React = require('react');
 var M = require('mori');
 var stateStream = require('./stateStream');
 var easingTypes = require('./easingTypes');
+var ReactInputSelection = require('react/lib/ReactInputSelection');
 
 function toObj(children) {
   return React.Children.map(children, function(child) {
@@ -50,8 +51,7 @@ var Container = React.createClass({
       }
       configs[key] = {
         top: 0,
-        width: 10,
-        opacity: 1,
+        opacity: 1
       };
     }
 
@@ -72,7 +72,7 @@ var Container = React.createClass({
     }
 
     var children = M.js_to_clj(toKeyValueList(o1));
-    var duration = 1700;
+    var duration = 2500;
     var frameCount = stateStream.toFrameCount(duration);
     var initState = this.state;
     var newStream = this.stream;
@@ -86,8 +86,7 @@ var Container = React.createClass({
 
           stateI = M.assoc_in(stateI, ['configs', exitKey], M.hash_map(
             'top', easingTypes.easeInOutQuad(ms, config.top, -200, duration),
-            'opacity', easingTypes.easeInOutQuad(ms, config.opacity, 0, duration),
-            'width', easingTypes.easeInOutQuad(ms, config.width, 0, duration)
+            'opacity', easingTypes.easeInOutQuad(ms, config.opacity, 0, duration)
           ));
         });
 
@@ -104,7 +103,7 @@ var Container = React.createClass({
         });
 
         return stateI;
-      }, M.drop(frameCount, newStream)); // can't cacheResult here bc the perf would be horrible
+      }, stateStream.drop2(frameCount, newStream)); // can't cacheResult here bc the perf would be horrible
 
       newStream = M.concat(chunk, restChunk);
     }
@@ -117,8 +116,7 @@ var Container = React.createClass({
 
           stateI = M.assoc_in(stateI, ['configs', enterKey], M.hash_map(
             'top', easingTypes.easeInOutQuad(ms, config ? config.top : -200, 0, duration),
-            'opacity', easingTypes.easeInOutQuad(ms, config ? config.opacity : 0, 1, duration),
-            'width', easingTypes.easeInOutQuad(ms, config ? config.width : 0, 10, duration)
+            'opacity', easingTypes.easeInOutQuad(ms, config ? config.opacity : 0, 1, duration)
           ));
           stateI = M.assoc(stateI, 'children', children);
         });
@@ -130,19 +128,27 @@ var Container = React.createClass({
         enters.forEach(function(enterKey) {
           stateI = M.assoc_in(stateI, ['configs', enterKey], M.hash_map(
             'top', 0,
-            'width', 10,
             'opacity', 1
           ));
           stateI = M.assoc(stateI, 'children', children);
         });
 
         return stateI;
-      }, M.drop(frameCount, newStream));
+      }, stateStream.drop2(frameCount, newStream));
 
       newStream = M.concat(chunk2, restChunk2);
     }
 
     this.setStateStream(newStream);
+  },
+
+  componentDidUpdate: function (prevProps, prevState) {
+    var o1 = toObj(this.state.children),
+        o2 = toObj(prevState.children);
+
+    if (diff(o1, o2).length || diff(o2, o1).length) {
+      this.props.onUpdate();
+    }
   },
 
   render: function() {
@@ -153,13 +159,11 @@ var Container = React.createClass({
       var child = kv.value;
       var s = {
         top: state.configs[key].top,
-        width: state.configs[key].width,
         opacity: state.configs[key].opacity,
         position: 'relative',
         overflow: 'hidden',
         WebkitUserSelect: 'none',
       };
-
       return <span style={s} key={key}>{child}</span>;
     });
 
@@ -171,38 +175,90 @@ var Container = React.createClass({
   }
 });
 
+var nextUuid = 0;
+function toIndexedChars(s) {
+  return s.split('').map(function (char) {
+    return {
+      uuid: nextUuid++,
+      char: char
+    };
+  });
+}
+
 // notice that this component is ignorant of both immutable-js and the animation
 var App4 = React.createClass({
   getInitialState: function () {
-    return { text: 'Click on me and start typing' };
+    return {
+      chars: toIndexedChars('Click on me and type something')
+    };
   },
 
   handleKeyDown: function (e) {
-    var text = this.state.text;
+    // for now, only handle backspace
+    if (e.keyCode !== 8) {
+      return;
+    }
 
-    switch (e.keyCode) {
-    case 8: // backspace
-      if (text.length > 0) {
-        text = text.substring(0, text.length - 1);
-      }
-      e.preventDefault();
-      break;
+    e.preventDefault();
+
+    var chars = this.state.chars;
+    var selection = this.getSelection();
+    var from = Math.min(selection.start, selection.end);
+    var to = Math.max(selection.start, selection.end);
+
+    if (to > from) {
+      chars.splice(from, to - from);
+      this.setSelection({ start: from });
+    } else if (from > 0) {
+      chars.splice(from - 1, 1);
+      this.setSelection({ start: from - 1 });
     }
 
     this.setState({
-      text: text
+      chars: chars
     });
   },
 
   handleKeyPress: function (e) {
     e.preventDefault();
 
-    var text = this.state.text;
-    text += String.fromCharCode(e.charCode);
+    var chars = this.state.chars;
+    var selection = this.getSelection();
+    var from = Math.min(selection.start, selection.end);
+    var to = Math.max(selection.start, selection.end);
+
+    chars.splice(from, to - from, toIndexedChars(String.fromCharCode(e.charCode))[0]);
+
+    this.setSelection({
+      start: from + 1
+    });
 
     this.setState({
-      text: text
+      chars: chars
     });
+  },
+
+  getSelection: function() {
+    return this._pendingSelection || ReactInputSelection.getSelection(this.getDOMNode());
+  },
+
+  setSelection: function(selection) {
+    if (typeof selection.end === 'undefined') {
+      selection.end = selection.start;
+    }
+
+    this._pendingSelection = selection;
+  },
+
+  flushPendingSelection: function () {
+    if (this._pendingSelection) {
+      ReactInputSelection.setSelection(this.getDOMNode(), this._pendingSelection);
+      delete this._pendingSelection;
+    }
+  },
+
+  handleContainerUpdate: function() {
+    this.flushPendingSelection();
   },
 
   render: function() {
@@ -211,9 +267,14 @@ var App4 = React.createClass({
            contentEditable
            onKeyPress={this.handleKeyPress}
            onKeyDown={this.handleKeyDown}>
-        <Container>
-          {this.state.text.split('').map(function (l, i) {
-            return <span key={i}>{l}</span>;
+        <Container onUpdate={this.handleContainerUpdate}>
+          {this.state.chars.map(function (char) {
+            return (
+              <span key={char.uuid}
+                    style={{whiteSpace: 'pre'}}>
+                {char.char}
+              </span>
+            );
           })}
         </Container>
       </div>
