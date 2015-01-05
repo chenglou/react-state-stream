@@ -89,7 +89,7 @@ var Container = React.createClass({
         });
 
         return stateI;
-      }, M.drop(frameCount, newStream)); // can't cacheResult here bc the perf would be horrible
+      }, stateStream.drop2(frameCount, newStream)); // can't cacheResult here bc the perf would be horrible
 
       newStream = M.concat(chunk, restChunk);
     }
@@ -122,7 +122,7 @@ var Container = React.createClass({
         });
 
         return stateI;
-      }, M.drop(frameCount, newStream));
+      }, stateStream.drop2(frameCount, newStream));
 
       newStream = M.concat(chunk2, restChunk2);
     }
