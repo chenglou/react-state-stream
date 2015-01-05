@@ -60,7 +60,7 @@ var Container = React.createClass({
     var duration = 700;
     var frameCount = stateStream.toFrameCount(duration);
     var initState = this.state;
-    var newStream = this.stream;
+    var newStream = stateStream.extendTo(frameCount + 1, this.stream);
 
     if (exits.length > 0) {
 
@@ -77,7 +77,7 @@ var Container = React.createClass({
         });
 
         return stateI;
-      }, stateStream.take2(frameCount, newStream), M.range());
+      }, M.take(frameCount, newStream), M.range());
 
       var restChunk = M.map(function(stateI) {
         exits.forEach(function(exitKey) {
@@ -89,7 +89,7 @@ var Container = React.createClass({
         });
 
         return stateI;
-      }, M.drop(frameCount, newStream)); // can't cacheResult here bc the perf would be horrible
+      }, M.drop(frameCount, newStream));
 
       newStream = M.concat(chunk, restChunk);
     }
@@ -109,7 +109,7 @@ var Container = React.createClass({
         });
 
         return stateI;
-      }, stateStream.take2(frameCount, newStream), M.range());
+      }, M.take(frameCount, newStream), M.range());
 
       var restChunk2 = M.map(function(stateI) {
         enters.forEach(function(enterKey) {

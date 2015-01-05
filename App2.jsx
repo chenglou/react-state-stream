@@ -22,10 +22,9 @@ var App2 = React.createClass({
       initState.goingLeft[1] ? 100 : 400,
     ];
     var newGoingLeft = M.vector(!initState.goingLeft[0], !initState.goingLeft[1]);
-    // the convention should be to always access this.state (rather than
-    // this.stream) in render and always access this.stream elsewhere. Here we
-    // break the convention a bit for simpler code (currently, stream head is
-    // the next state, not the current one)
+
+    var newStream = stateStream.extendTo(frameCount + 1, this.stream);
+
     var chunk = M.map(function(stateI, i) {
       var ms = stateStream.toMs(i);
       var newBlockX = M.vector(
@@ -34,12 +33,12 @@ var App2 = React.createClass({
       );
 
       return M.assoc(stateI, 'blockX', newBlockX, 'goingLeft', newGoingLeft);
-    }, stateStream.take2(frameCount, this.stream), M.range());
+    }, M.take(frameCount, newStream), M.range());
 
     var finalXI = M.js_to_clj(finalX);
     var restChunk = M.map(function(stateI) {
       return M.assoc(stateI, 'blockX', finalXI, 'goingLeft', newGoingLeft);
-    }, M.drop(frameCount, this.stream));
+    }, M.drop(frameCount, newStream));
 
     this.setStateStream(M.concat(chunk, restChunk));
   },

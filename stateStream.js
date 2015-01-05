@@ -22,15 +22,16 @@ function onlyOneLeft(seq) {
   return M.count(M.take(2, seq)) === 1;
 }
 
-// when a stream has size 4 and you want to map a tween of size 10, you don't
-// wanna manually extend the stream to 10. This helper does it and fill it with
-// the last value of the stream
-function take2(n, seq) {
+// when a stream has size 4 and you want to map a tween of size 10, you extend
+// the stream to 10. This helper does it and fill it with the last value of the
+// stream. If the stream's already longer than n then just return it
+function extendTo(n, seq) {
   var s = M.take(n, seq);
   var length = M.count(s);
   if (length === n) {
-    return s;
+    return seq;
   }
+  // TODO: this force evaluates the stream. Change that
   return M.concat(s, M.repeat(n - length, M.last(s)));
 }
 
@@ -72,7 +73,7 @@ var stateStreamMixin = {
 
     requestAnimationFrame(function next() {
       if (onlyOneLeft(self.stream)) {
-        // already evaluated it
+        // already evaluated stream[0]
         self._rafing = false;
         return;
       }
@@ -94,7 +95,7 @@ var stateStream = {
   toRange: toRange,
   toMs: toMs,
   toFrameCount: toFrameCount,
-  take2: take2,
+  extendTo: extendTo,
 };
 
 module.exports = stateStream;
