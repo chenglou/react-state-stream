@@ -348,7 +348,7 @@
 	        });
 
 	        return stateI;
-	      }, M.drop(frameCount, newStream)); // can't cacheResult here bc the perf would be horrible
+	      }, stateStream.drop2(frameCount, newStream)); // can't cacheResult here bc the perf would be horrible
 
 	      newStream = M.concat(chunk, restChunk);
 	    }
@@ -381,7 +381,7 @@
 	        });
 
 	        return stateI;
-	      }, M.drop(frameCount, newStream));
+	      }, stateStream.drop2(frameCount, newStream));
 
 	      newStream = M.concat(chunk2, restChunk2);
 	    }
@@ -517,6 +517,17 @@
 	  return M.concat(s, M.repeat(n - length, M.last(s)));
 	}
 
+	// we don't want to drop the last frame,
+	// or we'll end up losing the final state.
+	function drop2(n, seq) {
+	  var s = M.drop(n, seq);
+	  if (!M.is_empty(s)) {
+	    return s;
+	  }
+	  return M.repeat(1, M.last(seq));
+	}
+
+
 	var stateStreamMixin = {
 	  setStateStream: function(stream) {
 	    this.stream = stream;
@@ -578,6 +589,7 @@
 	  toMs: toMs,
 	  toFrameCount: toFrameCount,
 	  take2: take2,
+	  drop2: drop2
 	};
 
 	module.exports = stateStream;
