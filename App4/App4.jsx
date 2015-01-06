@@ -12,10 +12,6 @@ function toObj(children) {
   });
 }
 
-function getKeys(children) {
-  return Object.keys(toObj(children));
-}
-
 var ease = easingTypes.easeInOutQuad;
 
 var Container = React.createClass({
@@ -53,20 +49,22 @@ var Container = React.createClass({
   // there might be a new insight here. maybe the whole diffing and state
   // children is already determinable through key assignment
 
-  // TODO: bug when pressing abc -> c quickly at the beginning
+  // TODO: abstract away this logic!
+
+  // TODO: abc -> c will see d restart its transitioning out
   componentWillReceiveProps: function(nextProps) {
     var nextChildrenMap = toObj(nextProps.children);
     var currChildrenMap = toObj(this.props.children);
     var enters = diff(nextChildrenMap, currChildrenMap);
-    var exits = diff(currChildrenMap, nextChildrenMap);
+    var exits = diff(this.state.children, nextChildrenMap);
 
-    var childrenKeys = algo(getKeys(this.props.children), getKeys(nextProps.children));
+    var childrenKeys = algo(Object.keys(this.state.children), Object.keys(nextChildrenMap));
     var children = {};
     childrenKeys.forEach(function(key) {
-      children[key] = nextChildrenMap[key] || currChildrenMap[key];
-    });
+      children[key] = nextChildrenMap[key] || this.state.children[key];
+    }, this);
 
-    var duration = 1700;
+    var duration = 2700;
     var frameCount = stateStream.toFrameCount(duration);
     var initState = this.state;
     var newStream = stateStream.extendTo(frameCount + 1, this.stream);
@@ -76,15 +74,21 @@ var Container = React.createClass({
       if (exits.indexOf(key) > -1) {
         finalTops[key] = config.top;
       } else {
-        finalTops[key] = getKeys(nextProps.children).indexOf(key) * 60;
+        finalTops[key] = Object.keys(nextChildrenMap).indexOf(key) * 60;
       }
     });
 
     childrenKeys.forEach(function(key, i) {
       var chunk;
       var restChunk;
-      var config = initState.configs[key];
       var finalTop = finalTops[key];
+      // config might already exist if the component is still unmounting
+      var config = initState.configs[key] || {
+        left: 200,
+        height: 0,
+        opacity: 0,
+        top: finalTop,
+      };
 
       if (exits.indexOf(key) > -1) {
         chunk = M.map(function(stateI, i) {
@@ -109,13 +113,6 @@ var Container = React.createClass({
       } else if (enters.indexOf(key) > -1) {
         chunk = M.map(function(stateI, i) {
           var ms = stateStream.toMs(i);
-          // config might already exist if the component is still unmounting
-          var config = config || {
-            left: 200,
-            height: 0,
-            opacity: 0,
-            top: finalTop,
-          };
 
           stateI = M.assoc_in(stateI, ['configs', key], M.hash_map(
             'left', ease(ms, config.left, 0, duration),
@@ -143,9 +140,11 @@ var Container = React.createClass({
         chunk = M.map(function(stateI, i) {
           var ms = stateStream.toMs(i);
 
-          return M.assoc_in(stateI, ['configs', key], M.hash_map(
-            'top', ease(ms, config.top, finalTop, duration)
-          ));
+          return M.assoc_in(
+            stateI,
+            ['configs', key, 'top'],
+            ease(ms, config.top, finalTop, duration)
+          );
         }, M.take(frameCount, newStream), M.range());
 
         restChunk = M.map(function(stateI) {
@@ -194,6 +193,7 @@ var App3 = React.createClass({
   getInitialState: function() {
     return {
       items: ['a', 'b', 'c', 'd'],
+      // items: ['c'],
     };
   },
 
@@ -218,6 +218,9 @@ var App3 = React.createClass({
         <button onClick={this.handleClick.bind(null, 'ab')}>ab</button>
         <button onClick={this.handleClick.bind(null, 'ba')}>ba</button>
 
+        <button onClick={this.handleClick.bind(null, 'bcd')}>1 bcd</button>
+        <button onClick={this.handleClick.bind(null, 'cd')}>2 cd</button>
+        <button onClick={this.handleClick.bind(null, 'bcd')}>3 bcd</button>
         <Container>
           {this.state.items.map(function(item) {
             return <div style={s} key={item}>{item}</div>;
