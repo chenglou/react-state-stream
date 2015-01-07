@@ -41,12 +41,12 @@ var Child = React.createClass({
 var App1 = React.createClass({
   mixins: [stateStream.Mixin],
   getInitialStateStream: function() {
-    return M.map(function(a, i) {
+    return M.map(function(i) {
       return M.hash_map(
         'deg', i * -2,
         'childTurnLeft', false
       );
-    }, stateStream.toRange(999999), M.range());
+    }, M.range());
   },
 
   handleClick: function() {

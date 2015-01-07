@@ -1,9 +1,5 @@
 var M = require('mori');
 
-function toRange(ms) {
-  return M.range(0, ms, 1000/60);
-}
-
 function toMs(frame) {
   return frame * 1000 / 60;
 }
@@ -92,7 +88,6 @@ var stateStreamMixin = {
 
 var stateStream = {
   Mixin: stateStreamMixin,
-  toRange: toRange,
   toMs: toMs,
   toFrameCount: toFrameCount,
   extendTo: extendTo,
