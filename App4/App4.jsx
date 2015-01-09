@@ -12,7 +12,7 @@ function toObj(children) {
   });
 }
 
-var ease = easingTypes.easeInOutQuad;
+var ease = easingTypes.linear;
 
 var Container = React.createClass({
   mixins: [stateStream.Mixin],
@@ -64,7 +64,7 @@ var Container = React.createClass({
       children[key] = nextChildrenMap[key] || this.state.children[key];
     }, this);
 
-    var duration = 2700;
+    var duration = 700;
     var frameCount = stateStream.toFrameCount(duration);
     var initState = this.state;
     var newStream = stateStream.extendTo(frameCount + 1, this.stream);
