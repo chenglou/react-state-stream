@@ -11,9 +11,8 @@ var App2 = React.createClass({
   mixins: [stateStream.Mixin, tweenMixin],
   getInitialStateStream: function() {
     return M.repeat(1, M.js_to_clj({
-      blockX: [0, 0],
+      blockX: [0, 0, 0],
       goingLeft: false,
-      contrib: [],
     }));
   },
 
@@ -44,13 +43,9 @@ var App2 = React.createClass({
       );
     });
 
-    newStream = this.mapChunk(newStream, duration, function(stateI, ms) {
-      var contrib = ease(ms, start, dest, duration) - dest;
-
-      return M.assoc(stateI,
-        'contrib',
-        M.conj(M.get(stateI, 'contrib'), contrib)
-      );
+    newStream = this.tweenState(newStream, duration, ['blockX', 2], {
+      endValue: dest,
+      easingFunction: ease,
     });
 
     this.setStateStream(newStream);
@@ -78,11 +73,7 @@ var App2 = React.createClass({
       transform: 'translate3d(' + this.state.blockX[1] + 'px,0,0)',
     };
 
-    var val = this.state.contrib.reduce(function(a, x) {
-      return a + x;
-    }, this.state.goingLeft ? 400 : 0);
-
-    // var val = this.getAdditiveValue(['']);
+    var val = this.getAdditiveValue(['blockX', 2]);
 
     var s3 = {
       border: '1px solid gray',

@@ -31,6 +31,26 @@ function extendTo(n, seq) {
   return M.concat(s, M.repeat(n - length, M.last(s)));
 }
 
+// mori/cljs mapping over multiple collections stops at the end of the shortest.
+// for mapping over stream it's very conveninent to map til the end of the
+// longest
+function mapAll() {
+  // TODO: https://github.com/petkaantonov/bluebird/wiki/Optimization-killers#32-leaking-arguments
+  var f = arguments[0];
+  var colls = [].slice.call(arguments, 1);
+
+  return M.lazy_seq(function() {
+    var hasSomeItem = M.some(M.seq, colls);
+    if (!hasSomeItem) {
+      return;
+    }
+    return M.cons(
+      M.apply(f, M.map(M.first, colls)),
+      M.apply(mapAll, f, M.map(M.rest, colls))
+    );
+  });
+}
+
 var stateStreamMixin = {
   setStateStream: function(stream) {
     this.stream = stream;
@@ -38,6 +58,7 @@ var stateStreamMixin = {
   },
 
   getInitialState: function() {
+    // TOOD: need to merge mixins getInitialStateStream... bla
     var s;
     if (this.getInitialStateStream) {
       s = M.clj_to_js(M.first(this.getInitialStateStream()));
@@ -75,7 +96,7 @@ var stateStreamMixin = {
       }
       self.stream = M.rest(self.stream);
       var stateI = M.first(self.stream); // check order here
-      self.setState(M.clj_to_js(stateI));
+      self.replaceState(M.clj_to_js(stateI));
 
       requestAnimationFrame(next);
     });
@@ -91,6 +112,7 @@ var stateStream = {
   toMs: toMs,
   toFrameCount: toFrameCount,
   extendTo: extendTo,
+  mapAll: mapAll,
 };
 
 module.exports = stateStream;
