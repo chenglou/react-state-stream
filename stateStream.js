@@ -5,7 +5,7 @@ function toMs(frame) {
 }
 
 function toFrameCount(ms) {
-  return ms * 60 / 1000;
+  return Math.ceil(ms * 60 / 1000);
 }
 
 function requestAnimationFrame2(f) {
@@ -27,6 +27,7 @@ function extendTo(n, seq) {
   if (length === n) {
     return seq;
   }
+
   // TODO: this force evaluates the stream. Change that
   return M.concat(s, M.repeat(n - length, M.last(s)));
 }

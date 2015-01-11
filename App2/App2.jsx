@@ -43,6 +43,7 @@ var App2 = React.createClass({
       );
     });
 
+    // TODO: get a better APi. For everything actually
     newStream = this.tweenState(newStream, duration, ['blockX', 2], {
       endValue: dest,
       easingFunction: ease,
@@ -74,7 +75,6 @@ var App2 = React.createClass({
     };
 
     var val = this.getAdditiveValue(['blockX', 2]);
-
     var s3 = {
       border: '1px solid gray',
       borderRadius: '10px',

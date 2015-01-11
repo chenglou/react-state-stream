@@ -9,10 +9,9 @@ var tweenMixin = {
   },
   // TODO: prolly doesn't have to be a mixin
   // TODO: better name
-  // TODO: use mapALL
   mapState: function(stream, duration, cb) {
     var frameCount = stateStream.toFrameCount(duration);
-    var newStream = stateStream.extendTo(frameCount + 1, stream);
+    var newStream = stateStream.extendTo(frameCount, stream);
 
     var chunk = M.map(
       cb,
@@ -20,11 +19,11 @@ var tweenMixin = {
       M.map(stateStream.toMs, M.range())
     );
 
-    // TODO: bad, last stateI, not last then other states
+    // TODO: don't force evaluate this
     var restChunk = M.map(
-      cb,
-      M.drop(frameCount, newStream),
-      M.map(stateStream.toMs, M.repeat(frameCount))
+      M.identity,
+      M.repeat(M.last(chunk)),
+      M.drop(frameCount, newStream)
     );
 
     return M.concat(chunk, restChunk);
@@ -109,5 +108,5 @@ var tweenMixin = {
     }, stateVal);
   },
 };
-console.log(M.clj_to_js(M.vector()));
+
 module.exports = tweenMixin;
