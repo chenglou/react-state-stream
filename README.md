@@ -2,9 +2,9 @@
 
 React animation on steroid. [Live demo](https://rawgit.com/chenglou/react-state-stream/master/index.html).
 
-This is highly experimental. For a more stable and performant library, try [React Tween State](https://github.com/chenglou/react-tween-state).
+**This is highly experimental**. For a more stable and performant library, try [React-motion](https://github.com/chenglou/react-motion).
 
-Not providing a npm package for the moment. Actively looking for feedback since this might as well be the default React animation mechanism in the future.
+Not providing a npm package for the moment.
 
 The current master branch uses [mori](https://github.com/swannodette/mori) because there are some distinctive features I need that are not yet in [immutable-js](https://github.com/facebook/immutable-js/). The latter version is in the other branch and is (even more) underperformant.
 
